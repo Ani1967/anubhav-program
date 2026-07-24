@@ -33,7 +33,7 @@
     <p class="hint">Bring a real problem from your own classroom this cycle. Be specific — "students disengage during silent reading" is more useful than "engagement is low."</p>
     <form id="ledger-form">
       <label for="problem_text">Your problem</label>
-      <p class="field-hint">Be specific — what are students doing (or not doing)? "Students disengage during 20-minute lecture segments in Grade 8 algebra" is more useful than "engagement is low."</p>
+      <p class="field-hint"><em>e.g. "Students disengage during 20-minute lecture segments in Grade 8 algebra."</em> Say what students are doing (or not doing) — that's more useful than "engagement is low."</p>
       <textarea id="problem_text" required placeholder="Describe a live, specific problem from your classroom this cycle…"></textarea>
       <div style="margin-top:16px;"><button type="submit" class="btn btn-gold">Add to Problem Ledger</button></div>
       <div id="ledger-msg" class="form-msg"></div>
@@ -48,28 +48,69 @@
   <div class="card">
     <h2>Draft a Practice Card</h2>
     <p class="hint">Once a trial has run its course, write it up here. You can save it as a draft and come back before submitting it for review.</p>
+
+    <details class="example-toggle">
+      <summary>See a filled-in example</summary>
+      <div class="example-box">
+        <p><b>Problem:</b> Students in Grade 6 Science could recite facts but couldn't explain why things happen.</p>
+        <p><b>Context:</b> Grade 6, Science, 38 students</p>
+        <p><b>What was tried:</b> Ran one lesson using a hands-on demo first, and only explained the science concept afterward, instead of lecturing first.</p>
+        <p><b>What happened:</b> More students could explain the "why" in their own words afterward; a few quieter students still didn't join the group discussion part.</p>
+        <p><b>Tags:</b> Grade 6, Science, Inquiry-based</p>
+        <p><b>Lineage:</b> Saw this approach demonstrated at a district training.</p>
+      </div>
+    </details>
+
     <form id="card-form">
       <label for="problem_statement">Problem</label>
-      <p class="field-hint">Restate the problem you tackled — usually the same one from your Problem Ledger entry above.</p>
+      <p class="field-hint"><em>e.g. "Students could recite facts but couldn't explain why things happen."</em> Restate the problem you tackled — usually the same one from your Problem Ledger entry above.</p>
       <textarea id="problem_statement" required placeholder="What was the problem?"></textarea>
+
       <label for="context">Context</label>
-      <p class="field-hint">Grade, subject, class size, and tier — enough for another teacher to judge if this fits their classroom.</p>
-      <input type="text" id="context" required placeholder="e.g. Grade 8, Mathematics, 40 students, Foundation Tier">
+      <p class="field-hint"><em>e.g. "Grade 8, Mathematics, 40 students."</em> Just grade, subject, and class size — enough for another teacher to judge if this fits their classroom. (Your cohort's tier is added automatically.)</p>
+      <input type="text" id="context" required placeholder="e.g. Grade 8, Mathematics, 40 students">
+
       <label for="tried">What was tried</label>
-      <p class="field-hint">The specific action you took, not the theory behind it — what you actually did differently in the room.</p>
-      <textarea id="tried" required placeholder="e.g. Replaced one lecture on geometry with a hands-on project measuring and scaling the classroom."></textarea>
+      <p class="field-hint"><em>e.g. "Replaced one lecture on geometry with a hands-on project measuring and scaling the classroom."</em> The specific action you took, not the theory behind it.</p>
+      <textarea id="tried" required placeholder="What did you actually do differently?"></textarea>
+
       <label for="happened">What happened</label>
-      <p class="field-hint">What you actually observed with real students. Mixed or partial results are fine and expected — specificity matters more than success.</p>
-      <textarea id="happened" required placeholder="e.g. Engagement was visibly higher and most groups stayed on task; two groups struggled with unit conversion and needed extra support."></textarea>
+      <p class="field-hint"><em>e.g. "Engagement was visibly higher; two groups struggled with unit conversion."</em> What you actually observed with real students — mixed or partial results are fine.</p>
+      <textarea id="happened" required placeholder="What did you observe?"></textarea>
+
       <label for="tags">Tags</label>
-      <p class="field-hint">Searchable keywords — grade, subject, tier, theme — so other teachers can find this later.</p>
-      <input type="text" id="tags" placeholder="e.g. Grade 8, Math, Project-Based, Engagement">
-      <label for="lineage">Lineage (optional)</label>
-      <p class="field-hint">Did this build on a known method, a colleague's idea, or a prior cycle's practice?</p>
-      <input type="text" id="lineage" placeholder="e.g. Adapted from Cycle 3's station rotation model">
-      <div style="margin-top:16px;display:flex;gap:10px;">
+      <p class="field-hint">Pick a few words below to add them, or just type your own — grade, subject, or theme, so other teachers can find this later.</p>
+      <div class="tag-picker">
+        <select id="tag-suggestions">
+          <option value="">+ Click to add a suggested tag…</option>
+          <optgroup label="Theme">
+            <option>Engagement</option>
+            <option>Low-tech</option>
+            <option>Group work</option>
+            <option>Assessment</option>
+            <option>Inquiry-based</option>
+            <option>Peer learning</option>
+            <option>Differentiation</option>
+            <option>Classroom management</option>
+          </optgroup>
+          <optgroup label="Subject">
+            <option>Math</option>
+            <option>Science</option>
+            <option>Language</option>
+            <option>Social Studies</option>
+          </optgroup>
+        </select>
+      </div>
+      <input type="text" id="tags" placeholder="e.g. Grade 8, Math, Engagement">
+
+      <label for="lineage">Where did the idea come from? (optional)</label>
+      <p class="field-hint"><em>e.g. "A colleague showed me this" or "Saw it in a training video."</em> No need to name a formal method — just say who or what gave you the idea, if anyone.</p>
+      <input type="text" id="lineage" placeholder="e.g. A colleague showed me this approach">
+
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
         <button type="submit" class="btn btn-outline" data-action="draft">Save as Draft</button>
         <button type="submit" class="btn btn-gold" data-action="in_review">Submit for Review</button>
+        <button type="button" class="btn btn-outline" id="cancel-edit-btn" style="display:none;">Cancel Edit</button>
       </div>
       <div id="card-msg" class="form-msg"></div>
     </form>
@@ -86,6 +127,8 @@
 <script src="assets/client.js"></script>
 <script>
 let profile = null;
+let editingCardId = null;
+const TIER_SUFFIX_RE = / · (Foundation|Enhanced) Tier$/;
 
 async function init() {
   profile = await requireAuth();
@@ -147,15 +190,51 @@ async function loadCards() {
     .order("created_at", { ascending: false });
   if (error) { list.innerHTML = `<p class="hint">Couldn't load cards.</p>`; return; }
   if (!data.length) { list.innerHTML = `<p class="hint">No Practice Cards drafted yet.</p>`; return; }
+  window.__myCards = data;
   list.innerHTML = data.map(c => `
     <div class="entry-row">
       <div>
         <div class="txt"><strong>${escapeHtml(c.problem_statement.slice(0, 90))}${c.problem_statement.length > 90 ? "…" : ""}</strong></div>
         <div class="meta">Cycle ${c.cycle_id} · ${fmtDate(c.created_at)}${c.review_notes ? " · Reviewer note: " + escapeHtml(c.review_notes) : ""}</div>
       </div>
-      ${statusBadge(c.status)}
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${statusBadge(c.status)}
+        ${(c.status === "draft" || c.status === "rejected") ? `<button type="button" class="btn btn-outline btn-small" onclick="editCard('${c.id}')">Edit</button>` : ""}
+      </div>
     </div>`).join("");
 }
+
+function editCard(id) {
+  const card = (window.__myCards || []).find(c => c.id === id);
+  if (!card) return;
+  editingCardId = id;
+  document.getElementById("problem_statement").value = card.problem_statement || "";
+  document.getElementById("context").value = (card.context || "").replace(TIER_SUFFIX_RE, "");
+  document.getElementById("tried").value = card.tried || "";
+  document.getElementById("happened").value = card.happened || "";
+  document.getElementById("tags").value = card.tags || "";
+  document.getElementById("lineage").value = card.lineage || "";
+  document.getElementById("cancel-edit-btn").style.display = "inline-flex";
+  document.getElementById("card-form").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function resetCardForm() {
+  editingCardId = null;
+  document.getElementById("card-form").reset();
+  document.getElementById("cancel-edit-btn").style.display = "none";
+}
+
+document.getElementById("cancel-edit-btn").addEventListener("click", resetCardForm);
+
+document.getElementById("tag-suggestions").addEventListener("change", (e) => {
+  const val = e.target.value;
+  if (!val) return;
+  const tagsInput = document.getElementById("tags");
+  const existing = tagsInput.value.split(",").map(t => t.trim()).filter(Boolean);
+  if (!existing.includes(val)) existing.push(val);
+  tagsInput.value = existing.join(", ");
+  e.target.value = "";
+});
 
 document.getElementById("ledger-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -180,21 +259,33 @@ document.getElementById("card-form").addEventListener("submit", async (e) => {
   const msg = document.getElementById("card-msg");
   if (!profile.cohort_id) { showMessage(msg, "You need a cohort assigned before submitting.", "error"); return; }
   const cohort = profile.cohorts;
-  const { error } = await sb.from("practice_cards").insert({
-    cohort_id: profile.cohort_id,
-    cycle_id: cohort.current_cycle,
-    author_id: profile.id,
+  const tierLabel = cohort.tier === "enhanced" ? "Enhanced Tier" : "Foundation Tier";
+  const contextValue = `${document.getElementById("context").value.trim()} · ${tierLabel}`;
+
+  const payload = {
     problem_statement: document.getElementById("problem_statement").value,
-    context: document.getElementById("context").value,
+    context: contextValue,
     tried: document.getElementById("tried").value,
     happened: document.getElementById("happened").value,
     tags: document.getElementById("tags").value,
     lineage: document.getElementById("lineage").value,
     status,
-  });
+  };
+
+  let error;
+  if (editingCardId) {
+    ({ error } = await sb.from("practice_cards").update(payload).eq("id", editingCardId));
+  } else {
+    ({ error } = await sb.from("practice_cards").insert({
+      cohort_id: profile.cohort_id,
+      cycle_id: cohort.current_cycle,
+      author_id: profile.id,
+      ...payload,
+    }));
+  }
   if (error) { showMessage(msg, error.message, "error"); return; }
   showMessage(msg, status === "draft" ? "Saved as draft." : "Submitted for review.", "success");
-  document.getElementById("card-form").reset();
+  resetCardForm();
   await loadCards();
 });
 
