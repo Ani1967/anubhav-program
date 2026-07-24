@@ -88,7 +88,7 @@ async function loadCardQueue() {
   const el = document.getElementById("card-queue");
   const { data, error } = await sb
     .from("practice_cards")
-    .select("*, profiles(full_name, school)")
+    .select("*, profiles!author_id(full_name, school)")
     .eq("status", "in_review")
     .order("created_at", { ascending: true });
   if (error) { el.innerHTML = `<p class="hint">Couldn't load: ${escapeHtml(error.message)}</p>`; return; }
@@ -128,7 +128,7 @@ async function loadPublished() {
   const el = document.getElementById("published-list");
   const { data, error } = await sb
     .from("practice_cards")
-    .select("*, profiles(full_name)")
+    .select("*, profiles!author_id(full_name)")
     .eq("status", "published")
     .order("published_at", { ascending: false });
   if (error) { el.innerHTML = `<p class="hint">Couldn't load.</p>`; return; }

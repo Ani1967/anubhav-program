@@ -51,7 +51,7 @@ async function init() {
 
   const { data, error } = await sb
     .from("practice_cards")
-    .select("*, profiles(full_name, school)")
+    .select("*, profiles!author_id(full_name, school)")
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
