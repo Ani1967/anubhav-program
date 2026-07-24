@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard · The Anubhav Model</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="app-nav"><div class="container">
+  <a href="index.html" class="brand"><span class="dot"></span>The Anubhav Model</a>
+  <div class="app-nav-links">
+    <a href="library.html">Library</a>
+    <a href="review.html" id="review-link" style="display:none;">Review Queue</a>
+    <span class="role-tag" id="role-tag"></span>
+    <a href="#" id="signout">Log Out</a>
+  </div>
+</div></nav>
+
+<div class="container">
+  <div class="page-head">
+    <h1 id="greeting">Welcome</h1>
+    <p id="cohort-line">Loading your cohort…</p>
+  </div>
+
+  <div class="card" id="cycle-card">
+    <h2 id="cycle-title">Loading current cycle…</h2>
+    <p class="hint" id="cycle-subtitle"></p>
+  </div>
+
+  <div class="card">
+    <h2>Submit a Problem Ledger Entry</h2>
+    <p class="hint">Bring a real problem from your own classroom this cycle. Be specific — "students disengage during silent reading" is more useful than "engagement is low."</p>
+    <form id="ledger-form">
+      <label for="problem_text">Your problem</label>
+      <textarea id="problem_text" required placeholder="Describe a live, specific problem from your classroom this cycle…"></textarea>
+      <div style="margin-top:16px;"><button type="submit" class="btn btn-gold">Add to Problem Ledger</button></div>
+      <div id="ledger-msg" class="form-msg"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>My Problem Ledger Entries</h2>
+    <div id="ledger-list"><p class="hint">Loading…</p></div>
+  </div>
+
+  <div class="card">
+    <h2>Draft a Practice Card</h2>
+    <p class="hint">Once a trial has run its course, write it up here. You can save it as a draft and come back before submitting it for review.</p>
+    <form id="card-form">
+      <label for="problem_statement">Problem</label>
+      <textarea id="problem_statement" required placeholder="What was the problem?"></textarea>
+      <label for="context">Context</label>
+      <input type="text" id="context" required placeholder="Grade, subject, class size, tier (e.g. Grade 4, Literacy, 30 students, Foundation Tier)">
+      <label for="tried">What was tried</label>
+      <textarea id="tried" required placeholder="What specifically did you change?"></textarea>
+      <label for="happened">What happened</label>
+      <textarea id="happened" required placeholder="What did you observe? Include partial or mixed results honestly."></textarea>
+      <label for="tags">Tags</label>
+      <input type="text" id="tags" placeholder="e.g. Grade 3-5, Literacy, Low-tech">
+      <label for="lineage">Lineage (optional)</label>
+      <input type="text" id="lineage" placeholder="What prior practice or tradition did this build on?">
+      <div style="margin-top:16px;display:flex;gap:10px;">
+        <button type="submit" class="btn btn-outline" data-action="draft">Save as Draft</button>
+        <button type="submit" class="btn btn-gold" data-action="in_review">Submit for Review</button>
+      </div>
+      <div id="card-msg" class="form-msg"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>My Practice Cards</h2>
+    <div id="cards-list"><p class="hint">Loading…</p></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="assets/client.js"></script>
+<script>
+let profile = null;
+
+async function init() {
+  profile = await requireAuth();
+  if (!profile) return;
+
+  document.getElementById("greeting").textContent = `Welcome, ${profile.full_name}`;
+  document.getElementById("role-tag").textContent = profile.role;
+  document.getElementById("signout").addEventListener("click", (e) => { e.preventDefault(); signOut(); });
+  if (["facilitator", "admin"].includes(profile.role)) {
+    document.getElementById("review-link").style.display = "inline";
+  }
+
+  if (!profile.cohort_id) {
+    document.getElementById("cohort-line").textContent = "You're not assigned to a cohort yet — ask your admin to add you to one.";
+    document.getElementById("cycle-card").style.display = "none";
+    return;
+  }
+
+  const cohort = profile.cohorts;
+  document.getElementById("cohort-line").textContent = `${cohort.name} · ${cohort.tier === "enhanced" ? "Enhanced" : "Foundation"} Tier · Cycle ${cohort.current_cycle} of 8`;
+
+  await loadCycle(cohort.current_cycle);
+  await loadLedger();
+  await loadCards();
+}
+
+async function loadCycle(cycleId) {
+  const { data, error } = await sb.from("cycles").select("*").eq("id", cycleId).single();
+  if (error || !data) return;
+  document.getElementById("cycle-title").textContent = `Cycle ${data.id}: ${data.title}`;
+  document.getElementById("cycle-subtitle").textContent = data.subtitle;
+}
+
+async function loadLedger() {
+  const list = document.getElementById("ledger-list");
+  const { data, error } = await sb
+    .from("problem_ledger_entries")
+    .select("*")
+    .eq("teacher_id", profile.id)
+    .order("created_at", { ascending: false });
+  if (error) { list.innerHTML = `<p class="hint">Couldn't load entries.</p>`; return; }
+  if (!data.length) { list.innerHTML = `<p class="hint">Nothing submitted yet this cycle.</p>`; return; }
+  list.innerHTML = data.map(e => `
+    <div class="entry-row">
+      <div>
+        <div class="txt">${escapeHtml(e.problem_text)}</div>
+        <div class="meta">Cycle ${e.cycle_id} · ${fmtDate(e.created_at)}</div>
+      </div>
+      ${statusBadge(e.status)}
+    </div>`).join("");
+}
+
+async function loadCards() {
+  const list = document.getElementById("cards-list");
+  const { data, error } = await sb
+    .from("practice_cards")
+    .select("*")
+    .eq("author_id", profile.id)
+    .order("created_at", { ascending: false });
+  if (error) { list.innerHTML = `<p class="hint">Couldn't load cards.</p>`; return; }
+  if (!data.length) { list.innerHTML = `<p class="hint">No Practice Cards drafted yet.</p>`; return; }
+  list.innerHTML = data.map(c => `
+    <div class="entry-row">
+      <div>
+        <div class="txt"><strong>${escapeHtml(c.problem_statement.slice(0, 90))}${c.problem_statement.length > 90 ? "…" : ""}</strong></div>
+        <div class="meta">Cycle ${c.cycle_id} · ${fmtDate(c.created_at)}${c.review_notes ? " · Reviewer note: " + escapeHtml(c.review_notes) : ""}</div>
+      </div>
+      ${statusBadge(c.status)}
+    </div>`).join("");
+}
+
+document.getElementById("ledger-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById("ledger-msg");
+  if (!profile.cohort_id) { showMessage(msg, "You need a cohort assigned before submitting.", "error"); return; }
+  const cohort = profile.cohorts;
+  const { error } = await sb.from("problem_ledger_entries").insert({
+    cohort_id: profile.cohort_id,
+    teacher_id: profile.id,
+    cycle_id: cohort.current_cycle,
+    problem_text: document.getElementById("problem_text").value,
+  });
+  if (error) { showMessage(msg, error.message, "error"); return; }
+  showMessage(msg, "Added to the Problem Ledger.", "success");
+  document.getElementById("ledger-form").reset();
+  await loadLedger();
+});
+
+document.getElementById("card-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const status = e.submitter.dataset.action; // "draft" or "in_review"
+  const msg = document.getElementById("card-msg");
+  if (!profile.cohort_id) { showMessage(msg, "You need a cohort assigned before submitting.", "error"); return; }
+  const cohort = profile.cohorts;
+  const { error } = await sb.from("practice_cards").insert({
+    cohort_id: profile.cohort_id,
+    cycle_id: cohort.current_cycle,
+    author_id: profile.id,
+    problem_statement: document.getElementById("problem_statement").value,
+    context: document.getElementById("context").value,
+    tried: document.getElementById("tried").value,
+    happened: document.getElementById("happened").value,
+    tags: document.getElementById("tags").value,
+    lineage: document.getElementById("lineage").value,
+    status,
+  });
+  if (error) { showMessage(msg, error.message, "error"); return; }
+  showMessage(msg, status === "draft" ? "Saved as draft." : "Submitted for review.", "success");
+  document.getElementById("card-form").reset();
+  await loadCards();
+});
+
+init();
+</script>
+</body>
+</html>

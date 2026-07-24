@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice Card Library · The Anubhav Model</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="app-nav"><div class="container">
+  <a href="index.html" class="brand"><span class="dot"></span>The Anubhav Model</a>
+  <div class="app-nav-links">
+    <a href="index.html">Home</a>
+    <a href="login.html" id="nav-login">Log In</a>
+    <a href="dashboard.html" id="nav-dashboard" style="display:none;">Dashboard</a>
+  </div>
+</div></nav>
+
+<div class="container">
+  <div class="page-head">
+    <h1>Practice Card Library</h1>
+    <p>Every published card is a real classroom trial, credited to the teacher who ran it. Public and searchable — no account needed to browse.</p>
+  </div>
+
+  <div class="filters">
+    <select id="filter-cycle"><option value="">All cycles</option></select>
+    <input type="text" id="filter-search" placeholder="Search problem, tags, or context…">
+  </div>
+
+  <div id="results" class="library-grid"><p class="hint">Loading…</p></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="assets/client.js"></script>
+<script>
+let allCards = [];
+
+async function init() {
+  const user = await getSessionUser();
+  if (user) {
+    document.getElementById("nav-login").style.display = "none";
+    document.getElementById("nav-dashboard").style.display = "inline";
+  }
+
+  const { data: cycles } = await sb.from("cycles").select("id, title").order("id");
+  const cycleSel = document.getElementById("filter-cycle");
+  if (cycles) {
+    cycleSel.innerHTML += cycles.map(c => `<option value="${c.id}">Cycle ${c.id}: ${escapeHtml(c.title)}</option>`).join("");
+  }
+
+  const { data, error } = await sb
+    .from("practice_cards")
+    .select("*, profiles(full_name, school)")
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    document.getElementById("results").innerHTML = `<p class="hint">Couldn't load the library: ${escapeHtml(error.message)}</p>`;
+    return;
+  }
+  allCards = data || [];
+  render();
+
+  document.getElementById("filter-cycle").addEventListener("change", render);
+  document.getElementById("filter-search").addEventListener("input", render);
+}
+
+function render() {
+  const cycleFilter = document.getElementById("filter-cycle").value;
+  const q = document.getElementById("filter-search").value.trim().toLowerCase();
+
+  let cards = allCards;
+  if (cycleFilter) cards = cards.filter(c => String(c.cycle_id) === cycleFilter);
+  if (q) {
+    cards = cards.filter(c =>
+      (c.problem_statement || "").toLowerCase().includes(q) ||
+      (c.tags || "").toLowerCase().includes(q) ||
+      (c.context || "").toLowerCase().includes(q)
+    );
+  }
+
+  const el = document.getElementById("results");
+  if (!cards.length) {
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">No published cards match yet. As cohorts run cycles and mint cards, they'll appear here.</div>`;
+    return;
+  }
+
+  el.innerHTML = cards.map(c => `
+    <div class="pc-card">
+      <div class="pc-tags">${(c.tags || "").split(",").filter(t => t.trim()).map(t => `<span>${escapeHtml(t.trim())}</span>`).join("")}</div>
+      <h3>${escapeHtml(c.problem_statement)}</h3>
+      <div class="field"><b>Context</b>${escapeHtml(c.context)}</div>
+      <div class="field"><b>What was tried</b>${escapeHtml(c.tried)}</div>
+      <div class="field"><b>What happened</b>${escapeHtml(c.happened)}</div>
+      ${c.lineage ? `<div class="field"><b>Lineage</b>${escapeHtml(c.lineage)}</div>` : ""}
+      <div class="author">Cycle ${c.cycle_id} · ${escapeHtml(c.profiles?.full_name || "Anonymous")}, ${escapeHtml(c.profiles?.school || "")}</div>
+    </div>`).join("");
+}
+
+init();
+</script>
+</body>
+</html>

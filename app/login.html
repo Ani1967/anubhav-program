@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In · The Anubhav Model</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="app-nav"><div class="container">
+  <a href="index.html" class="brand"><span class="dot"></span>The Anubhav Model</a>
+  <div class="app-nav-links"><a href="signup.html">New here? Create an account</a></div>
+</div></nav>
+
+<div class="container-narrow">
+  <div class="page-head">
+    <h1>Log In</h1>
+    <p>Continue to your Problem Ledger and Practice Cards.</p>
+  </div>
+
+  <div class="card">
+    <form id="login-form">
+      <label for="email">Email</label>
+      <input type="email" id="email" required>
+      <label for="password">Password</label>
+      <input type="password" id="password" required>
+      <div style="margin-top:22px;">
+        <button type="submit" class="btn btn-gold" id="submit-btn">Log In</button>
+      </div>
+      <div id="msg" class="form-msg"></div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="assets/client.js"></script>
+<script>
+(async () => {
+  const user = await getSessionUser();
+  if (user) window.location.href = "dashboard.html";
+})();
+
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById("msg");
+  const btn = document.getElementById("submit-btn");
+  btn.disabled = true;
+  showMessage(msg, "Logging in…", "info");
+
+  const { error } = await sb.auth.signInWithPassword({
+    email: document.getElementById("email").value,
+    password: document.getElementById("password").value,
+  });
+
+  btn.disabled = false;
+  if (error) { showMessage(msg, error.message, "error"); return; }
+  window.location.href = "dashboard.html";
+});
+</script>
+</body>
+</html>
