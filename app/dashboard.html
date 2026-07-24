@@ -33,6 +33,7 @@
     <p class="hint">Bring a real problem from your own classroom this cycle. Be specific — "students disengage during silent reading" is more useful than "engagement is low."</p>
     <form id="ledger-form">
       <label for="problem_text">Your problem</label>
+      <p class="field-hint">Be specific — what are students doing (or not doing)? "Students disengage during 20-minute lecture segments in Grade 8 algebra" is more useful than "engagement is low."</p>
       <textarea id="problem_text" required placeholder="Describe a live, specific problem from your classroom this cycle…"></textarea>
       <div style="margin-top:16px;"><button type="submit" class="btn btn-gold">Add to Problem Ledger</button></div>
       <div id="ledger-msg" class="form-msg"></div>
@@ -49,17 +50,23 @@
     <p class="hint">Once a trial has run its course, write it up here. You can save it as a draft and come back before submitting it for review.</p>
     <form id="card-form">
       <label for="problem_statement">Problem</label>
+      <p class="field-hint">Restate the problem you tackled — usually the same one from your Problem Ledger entry above.</p>
       <textarea id="problem_statement" required placeholder="What was the problem?"></textarea>
       <label for="context">Context</label>
-      <input type="text" id="context" required placeholder="Grade, subject, class size, tier (e.g. Grade 4, Literacy, 30 students, Foundation Tier)">
+      <p class="field-hint">Grade, subject, class size, and tier — enough for another teacher to judge if this fits their classroom.</p>
+      <input type="text" id="context" required placeholder="e.g. Grade 8, Mathematics, 40 students, Foundation Tier">
       <label for="tried">What was tried</label>
-      <textarea id="tried" required placeholder="What specifically did you change?"></textarea>
+      <p class="field-hint">The specific action you took, not the theory behind it — what you actually did differently in the room.</p>
+      <textarea id="tried" required placeholder="e.g. Replaced one lecture on geometry with a hands-on project measuring and scaling the classroom."></textarea>
       <label for="happened">What happened</label>
-      <textarea id="happened" required placeholder="What did you observe? Include partial or mixed results honestly."></textarea>
+      <p class="field-hint">What you actually observed with real students. Mixed or partial results are fine and expected — specificity matters more than success.</p>
+      <textarea id="happened" required placeholder="e.g. Engagement was visibly higher and most groups stayed on task; two groups struggled with unit conversion and needed extra support."></textarea>
       <label for="tags">Tags</label>
-      <input type="text" id="tags" placeholder="e.g. Grade 3-5, Literacy, Low-tech">
+      <p class="field-hint">Searchable keywords — grade, subject, tier, theme — so other teachers can find this later.</p>
+      <input type="text" id="tags" placeholder="e.g. Grade 8, Math, Project-Based, Engagement">
       <label for="lineage">Lineage (optional)</label>
-      <input type="text" id="lineage" placeholder="What prior practice or tradition did this build on?">
+      <p class="field-hint">Did this build on a known method, a colleague's idea, or a prior cycle's practice?</p>
+      <input type="text" id="lineage" placeholder="e.g. Adapted from Cycle 3's station rotation model">
       <div style="margin-top:16px;display:flex;gap:10px;">
         <button type="submit" class="btn btn-outline" data-action="draft">Save as Draft</button>
         <button type="submit" class="btn btn-gold" data-action="in_review">Submit for Review</button>
