@@ -31,6 +31,7 @@ a{color:inherit;}
 
 label{display:block;font-size:.85rem;font-weight:700;color:var(--navy);margin:16px 0 6px;}
 label:first-child{margin-top:0;}
+.field-hint{color:var(--muted);font-size:.78rem;margin:-4px 0 6px;line-height:1.4;}
 input[type=text], input[type=email], input[type=password], select, textarea{
   width:100%;padding:11px 13px;border:1px solid #d8d8d8;border-radius:6px;font-size:.95rem;font-family:var(--sans);background:var(--white);
 }
