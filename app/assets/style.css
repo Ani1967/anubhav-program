@@ -32,6 +32,18 @@ a{color:inherit;}
 label{display:block;font-size:.85rem;font-weight:700;color:var(--navy);margin:16px 0 6px;}
 label:first-child{margin-top:0;}
 .field-hint{color:var(--muted);font-size:.78rem;margin:-4px 0 6px;line-height:1.4;}
+.field-hint em{color:var(--navy);font-style:italic;}
+
+.example-toggle{margin:14px 0 22px;font-size:.85rem;}
+.example-toggle summary{cursor:pointer;color:var(--navy);font-weight:600;}
+.example-toggle summary:hover{color:var(--gold);}
+.example-toggle .example-box{background:var(--grey);border-radius:8px;padding:14px 16px;margin-top:10px;font-size:.85rem;}
+.example-box p{margin:0 0 8px;}
+.example-box p:last-child{margin-bottom:0;}
+.example-box b{color:var(--navy);}
+
+.tag-picker{margin-bottom:8px;}
+.tag-picker select{width:auto;min-width:220px;}
 input[type=text], input[type=email], input[type=password], select, textarea{
   width:100%;padding:11px 13px;border:1px solid #d8d8d8;border-radius:6px;font-size:.95rem;font-family:var(--sans);background:var(--white);
 }
