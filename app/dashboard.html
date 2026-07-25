@@ -119,6 +119,21 @@
       <p class="field-hint"><em>e.g. "A colleague showed me this" or "Saw it in a training video."</em> No need to name a formal method — just say who or what gave you the idea, if anyone.</p>
       <input type="text" id="lineage" placeholder="e.g. A colleague showed me this approach">
 
+      <div id="media-section" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid #eee;">
+        <label style="margin-top:0;">Evidence (optional)</label>
+        <p class="field-hint">Save the card first (as a draft), then attach one photo, short audio clip, or short video as evidence. Please only share media you have permission to share, and avoid photos that clearly identify individual students without their family's consent.</p>
+        <div id="media-list"></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+          <input type="file" id="media-file" accept="image/*,audio/*,video/*">
+          <button type="button" class="btn btn-outline btn-small" id="media-upload-btn">Attach</button>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:8px;font-weight:400;font-size:.82rem;color:var(--muted);margin-top:8px;">
+          <input type="checkbox" id="media-consent" style="width:auto;margin-top:3px;">
+          I confirm I have permission to share this media and it does not identify students without their family's consent.
+        </label>
+        <div id="media-msg" class="form-msg"></div>
+      </div>
+
       <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
         <button type="submit" class="btn btn-outline" data-action="draft">Save as Draft</button>
         <button type="submit" class="btn btn-gold" data-action="in_review">Submit for Review</button>
@@ -307,6 +322,7 @@ function editCard(id) {
   document.getElementById("tags").value = card.tags || "";
   document.getElementById("lineage").value = card.lineage || "";
   document.getElementById("cancel-edit-btn").style.display = "inline-flex";
+  showMediaSection(id);
   document.getElementById("card-form").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -314,7 +330,64 @@ function resetCardForm() {
   editingCardId = null;
   document.getElementById("card-form").reset();
   document.getElementById("cancel-edit-btn").style.display = "none";
+  document.getElementById("media-section").style.display = "none";
 }
+
+function showMediaSection(cardId) {
+  document.getElementById("media-section").style.display = "";
+  loadMediaList(cardId);
+}
+
+async function loadMediaList(cardId) {
+  const list = document.getElementById("media-list");
+  list.innerHTML = "Loading…";
+  const { data, error } = await sb.from("card_media").select("*").eq("card_id", cardId).order("created_at");
+  if (error) { list.innerHTML = ""; return; }
+  if (!data.length) { list.innerHTML = `<p class="field-hint">No evidence attached yet.</p>`; return; }
+  list.innerHTML = data.map(m => {
+    const url = `${SUPABASE_URL}/storage/v1/object/public/card-media/${m.storage_path}`;
+    return `<div class="entry-row" style="padding:8px 12px;">
+      <a href="${url}" target="_blank" rel="noopener">${escapeHtml(m.media_type)} file →</a>
+      <button type="button" class="btn btn-outline btn-small" onclick="deleteMedia('${m.id}','${cardId}')">Remove</button>
+    </div>`;
+  }).join("");
+}
+
+async function deleteMedia(mediaId, cardId) {
+  const { data: row } = await sb.from("card_media").select("storage_path").eq("id", mediaId).single();
+  await sb.from("card_media").delete().eq("id", mediaId);
+  if (row?.storage_path) await sb.storage.from("card-media").remove([row.storage_path]);
+  loadMediaList(cardId);
+}
+
+document.getElementById("media-upload-btn").addEventListener("click", async () => {
+  const msg = document.getElementById("media-msg");
+  if (!editingCardId) { showMessage(msg, "Save the card as a draft first.", "error"); return; }
+  if (!document.getElementById("media-consent").checked) {
+    showMessage(msg, "Please confirm you have permission to share this media first.", "error");
+    return;
+  }
+  const fileInput = document.getElementById("media-file");
+  const file = fileInput.files[0];
+  if (!file) { showMessage(msg, "Choose a file first.", "error"); return; }
+  const mediaType = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : file.type.startsWith("audio/") ? "audio" : null;
+  if (!mediaType) { showMessage(msg, "Please choose an image, audio, or video file.", "error"); return; }
+
+  showMessage(msg, "Uploading…", "info");
+  const path = `${profile.id}/${editingCardId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const { error: upErr } = await sb.storage.from("card-media").upload(path, file);
+  if (upErr) { showMessage(msg, upErr.message, "error"); return; }
+
+  const { error: insErr } = await sb.from("card_media").insert({
+    card_id: editingCardId, teacher_id: profile.id, storage_path: path, media_type: mediaType,
+  });
+  if (insErr) { showMessage(msg, insErr.message, "error"); return; }
+
+  showMessage(msg, "Attached.", "success");
+  fileInput.value = "";
+  document.getElementById("media-consent").checked = false;
+  loadMediaList(editingCardId);
+});
 
 document.getElementById("cancel-edit-btn").addEventListener("click", resetCardForm);
 
@@ -364,20 +437,28 @@ document.getElementById("card-form").addEventListener("submit", async (e) => {
     status,
   };
 
-  let error;
+  let error, newId;
   if (editingCardId) {
     ({ error } = await sb.from("practice_cards").update(payload).eq("id", editingCardId));
   } else {
-    ({ error } = await sb.from("practice_cards").insert({
+    const res = await sb.from("practice_cards").insert({
       cohort_id: profile.cohort_id,
       cycle_id: cohort.current_cycle,
       author_id: profile.id,
       ...payload,
-    }));
+    }).select("id").single();
+    error = res.error;
+    newId = res.data?.id;
   }
   if (error) { showMessage(msg, error.message, "error"); return; }
-  showMessage(msg, status === "draft" ? "Saved as draft." : "Submitted for review.", "success");
-  resetCardForm();
+  showMessage(msg, status === "draft" ? "Saved as draft. You can now attach evidence below." : "Submitted for review.", "success");
+  if (newId && status === "draft") {
+    editingCardId = newId;
+    document.getElementById("cancel-edit-btn").style.display = "inline-flex";
+    showMediaSection(newId);
+  } else {
+    resetCardForm();
+  }
   await loadCards();
 });
 

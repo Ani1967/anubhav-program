@@ -19,7 +19,7 @@
 <div class="container">
   <div class="page-head">
     <h1>Practice Card Library</h1>
-    <p>Every published card is a real classroom trial, credited to the teacher who ran it. Public and searchable — no account needed to browse.</p>
+    <p>Published cards are real classroom trials, credited to the teacher who ran them. A few "Starter Example" cards per cycle are illustrative, written by the program team to show the format — clearly labeled as such. Public and searchable — no account needed to browse.</p>
   </div>
 
   <div class="filters">
@@ -51,7 +51,7 @@ async function init() {
 
   const { data, error } = await sb
     .from("practice_cards")
-    .select("*, profiles!author_id(full_name, school)")
+    .select("*, profiles!author_id(full_name, school), card_media(storage_path, media_type)")
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
@@ -86,16 +86,26 @@ function render() {
     return;
   }
 
-  el.innerHTML = cards.map(c => `
+  el.innerHTML = cards.map(c => {
+    const isSeed = c.author_label === "The Anubhav Model Team";
+    const mediaHtml = (c.card_media || []).map(m => {
+      const url = `${SUPABASE_URL}/storage/v1/object/public/card-media/${m.storage_path}`;
+      if (m.media_type === "image") return `<img src="${url}" alt="Evidence photo" style="width:100%;border-radius:6px;margin-top:6px;">`;
+      if (m.media_type === "video") return `<video src="${url}" controls style="width:100%;border-radius:6px;margin-top:6px;"></video>`;
+      return `<audio src="${url}" controls style="width:100%;margin-top:6px;"></audio>`;
+    }).join("");
+    return `
     <div class="pc-card">
-      <div class="pc-tags">${(c.tags || "").split(",").filter(t => t.trim()).map(t => `<span>${escapeHtml(t.trim())}</span>`).join("")}</div>
+      <div class="pc-tags">${isSeed ? '<span style="background:var(--ice);color:var(--navy-dark);">Starter Example</span>' : ""}${(c.tags || "").split(",").filter(t => t.trim() && t.trim() !== "Starter Example").map(t => `<span>${escapeHtml(t.trim())}</span>`).join("")}</div>
       <h3>${escapeHtml(c.problem_statement)}</h3>
       <div class="field"><b>Context</b>${escapeHtml(c.context)}</div>
       <div class="field"><b>What was tried</b>${escapeHtml(c.tried)}</div>
       <div class="field"><b>What happened</b>${escapeHtml(c.happened)}</div>
       ${c.lineage ? `<div class="field"><b>Lineage</b>${escapeHtml(c.lineage)}</div>` : ""}
-      <div class="author">Cycle ${c.cycle_id} · ${escapeHtml(c.profiles?.full_name || "Anonymous")}, ${escapeHtml(c.profiles?.school || "")}</div>
-    </div>`).join("");
+      ${mediaHtml}
+      <div class="author">Cycle ${c.cycle_id} · ${escapeHtml(c.profiles?.full_name || c.author_label || "Anonymous")}${c.profiles?.school ? ", " + escapeHtml(c.profiles.school) : ""}</div>
+    </div>`;
+  }).join("");
 }
 
 init();

@@ -88,26 +88,35 @@ async function loadCardQueue() {
   const el = document.getElementById("card-queue");
   const { data, error } = await sb
     .from("practice_cards")
-    .select("*, profiles!author_id(full_name, school)")
+    .select("*, profiles!author_id(full_name, school), card_media(storage_path, media_type)")
     .eq("status", "in_review")
     .order("created_at", { ascending: true });
   if (error) { el.innerHTML = `<p class="hint">Couldn't load: ${escapeHtml(error.message)}</p>`; return; }
   if (!data.length) { el.innerHTML = `<p class="hint">Nothing awaiting review.</p>`; return; }
-  el.innerHTML = data.map(c => `
+  el.innerHTML = data.map(c => {
+    const mediaHtml = (c.card_media || []).map(m => {
+      const url = `${SUPABASE_URL}/storage/v1/object/public/card-media/${m.storage_path}`;
+      if (m.media_type === "image") return `<img src="${url}" alt="Evidence photo" style="max-width:220px;border-radius:6px;margin:6px 6px 0 0;">`;
+      if (m.media_type === "video") return `<video src="${url}" controls style="max-width:280px;border-radius:6px;margin:6px 6px 0 0;"></video>`;
+      return `<audio src="${url}" controls style="margin:6px 6px 0 0;"></audio>`;
+    }).join("");
+    return `
     <div class="card" style="box-shadow:none;border:1px solid #e6e6e6;padding:18px;">
       <h3 style="font-family:var(--serif);color:var(--navy);margin:0 0 10px;">${escapeHtml(c.problem_statement)}</h3>
       <p><b>Context:</b> ${escapeHtml(c.context)}</p>
       <p><b>What was tried:</b> ${escapeHtml(c.tried)}</p>
       <p><b>What happened:</b> ${escapeHtml(c.happened)}</p>
       <p><b>Tags:</b> ${escapeHtml(c.tags || "—")} &nbsp; <b>Lineage:</b> ${escapeHtml(c.lineage || "—")}</p>
-      <p class="meta" style="color:var(--muted);font-size:.82rem;">By ${escapeHtml(c.profiles?.full_name || "Unknown")}, ${escapeHtml(c.profiles?.school || "")} · Cycle ${c.cycle_id} · ${fmtDate(c.created_at)}</p>
+      ${mediaHtml ? `<div>${mediaHtml}</div>` : ""}
+      <p class="meta" style="color:var(--muted);font-size:.82rem;">By ${escapeHtml(c.profiles?.full_name || c.author_label || "Unknown")}, ${escapeHtml(c.profiles?.school || "")} · Cycle ${c.cycle_id} · ${fmtDate(c.created_at)}</p>
       <label>Review notes (shown to the author either way)</label>
       <textarea id="notes-${c.id}" placeholder="Honest, specific, credited, proportionate — what needs fixing, if anything?"></textarea>
       <div style="margin-top:12px;display:flex;gap:10px;">
         <button class="btn btn-gold btn-small" onclick="reviewCard('${c.id}','published')">Approve & Publish</button>
         <button class="btn btn-red btn-small" onclick="reviewCard('${c.id}','rejected')">Send Back</button>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 async function reviewCard(id, status) {
@@ -137,7 +146,7 @@ async function loadPublished() {
     <div class="entry-row">
       <div>
         <div class="txt">${escapeHtml(c.problem_statement.slice(0, 90))}${c.problem_statement.length > 90 ? "…" : ""}</div>
-        <div class="meta">By ${escapeHtml(c.profiles?.full_name || "Unknown")} · Cycle ${c.cycle_id} · Published ${fmtDate(c.published_at)}</div>
+        <div class="meta">By ${escapeHtml(c.profiles?.full_name || c.author_label || "Unknown")} · Cycle ${c.cycle_id} · Published ${fmtDate(c.published_at)}</div>
       </div>
       ${statusBadge(c.status)}
     </div>`).join("");
