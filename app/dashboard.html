@@ -28,7 +28,19 @@
     <p class="hint" id="cycle-subtitle"></p>
   </div>
 
-  <div class="card">
+  <div class="card" id="paywall-card" style="display:none;">
+    <h2 id="paywall-title">Unlock Cycle</h2>
+    <p class="hint" id="paywall-hint">Cycle 1 was free. Unlock this cycle to submit Problem Ledger entries and Practice Cards for it.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button type="button" class="btn btn-gold" id="unlock-cycle-btn">Unlock this cycle — ₹499</button>
+      <button type="button" class="btn btn-navy" id="unlock-bundle-btn">Unlock all remaining cycles — ₹2,499</button>
+      <button type="button" class="btn btn-outline" id="unlock-paypal-btn" style="display:none;">Pay with PayPal</button>
+    </div>
+    <p class="field-hint" style="margin-top:12px;">Secure checkout via Razorpay — cards, UPI, and netbanking all accepted. Your access unlocks immediately after payment.</p>
+    <div id="paywall-msg" class="form-msg"></div>
+  </div>
+
+  <div class="card" id="ledger-form-card">
     <h2>Submit a Problem Ledger Entry</h2>
     <p class="hint">Bring a real problem from your own classroom this cycle. Be specific — "students disengage during silent reading" is more useful than "engagement is low."</p>
     <form id="ledger-form">
@@ -45,7 +57,7 @@
     <div id="ledger-list"><p class="hint">Loading…</p></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="card-form-card">
     <h2>Draft a Practice Card</h2>
     <p class="hint">Once a trial has run its course, write it up here. You can save it as a draft and come back before submitting it for review.</p>
 
@@ -123,12 +135,72 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="config.js"></script>
 <script src="assets/client.js"></script>
 <script>
 let profile = null;
 let editingCardId = null;
 const TIER_SUFFIX_RE = / · (Foundation|Enhanced) Tier$/;
+
+async function callEdgeFunction(name, body) {
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+      "apikey": SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed.");
+  return data;
+}
+
+async function checkCycleAccess(cycleId) {
+  const { data, error } = await sb.rpc("has_cycle_access", { p_teacher: profile.id, p_cycle: cycleId });
+  if (error) { console.error(error); return true; } // fail open on unexpected errors rather than blocking free content
+  return data;
+}
+
+async function startRazorpayCheckout(plan, cycleId) {
+  const msg = document.getElementById("paywall-msg");
+  showMessage(msg, "Starting checkout…", "info");
+  try {
+    const order = await callEdgeFunction("razorpay-create-order", { plan, cycle_id: cycleId });
+    const rzp = new Razorpay({
+      key: order.key_id,
+      amount: order.amount,
+      currency: order.currency,
+      order_id: order.order_id,
+      name: "The Anubhav Model",
+      description: plan === "whole_course" ? "Unlock Cycles 2–8" : `Unlock Cycle ${cycleId}`,
+      prefill: { name: profile.full_name },
+      theme: { color: "#1F3864" },
+      handler: async function (response) {
+        try {
+          showMessage(msg, "Verifying payment…", "info");
+          await callEdgeFunction("razorpay-verify", {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+          showMessage(msg, "Payment successful — reloading…", "success");
+          setTimeout(() => window.location.reload(), 1200);
+        } catch (e) {
+          showMessage(msg, "Payment went through but verification failed: " + e.message + ". Contact your admin.", "error");
+        }
+      },
+      modal: { ondismiss: function () { showMessage(msg, "", "info"); } },
+    });
+    rzp.open();
+    showMessage(msg, "", "info");
+  } catch (e) {
+    showMessage(msg, e.message, "error");
+  }
+}
 
 async function init() {
   profile = await requireAuth();
@@ -151,8 +223,28 @@ async function init() {
   document.getElementById("cohort-line").textContent = `${cohort.name} · ${cohort.tier === "enhanced" ? "Enhanced" : "Foundation"} Tier · Cycle ${cohort.current_cycle} of 8`;
 
   await loadCycle(cohort.current_cycle);
+  await applyPaywallGate(cohort.current_cycle);
   await loadLedger();
   await loadCards();
+}
+
+async function applyPaywallGate(cycleId) {
+  const unlocked = await checkCycleAccess(cycleId);
+  const paywall = document.getElementById("paywall-card");
+  const ledgerCard = document.getElementById("ledger-form-card");
+  const cardFormCard = document.getElementById("card-form-card");
+  if (unlocked) {
+    paywall.style.display = "none";
+    ledgerCard.style.display = "";
+    cardFormCard.style.display = "";
+    return;
+  }
+  ledgerCard.style.display = "none";
+  cardFormCard.style.display = "none";
+  paywall.style.display = "";
+  document.getElementById("paywall-title").textContent = `Unlock Cycle ${cycleId}`;
+  document.getElementById("unlock-cycle-btn").onclick = () => startRazorpayCheckout("per_cycle", cycleId);
+  document.getElementById("unlock-bundle-btn").onclick = () => startRazorpayCheckout("whole_course", null);
 }
 
 async function loadCycle(cycleId) {
