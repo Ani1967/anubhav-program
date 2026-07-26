@@ -78,6 +78,7 @@ document.getElementById("signup-form").addEventListener("submit", async (e) => {
     email: document.getElementById("email").value,
     password: document.getElementById("password").value,
     options: {
+      emailRedirectTo: window.location.href.replace("signup.html", "login.html"),
       data: {
         full_name: document.getElementById("full_name").value,
         school: document.getElementById("school").value,
