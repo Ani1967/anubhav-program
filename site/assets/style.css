@@ -4,22 +4,31 @@
   --radius:10px;
   --serif: Georgia, "Cambria", "Times New Roman", serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Calibri, Arial, sans-serif;
+  /* Faint mandala-style rosette motif (flower-of-life + rings), in soft ice-blue, tuned very light on purpose */
+  --pattern-dark: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><g fill="none" stroke="%23CADCFC" stroke-width="1"><circle cx="166" cy="150" r="16" opacity="0.14"/><circle cx="158" cy="163.9" r="16" opacity="0.14"/><circle cx="142" cy="163.9" r="16" opacity="0.14"/><circle cx="134" cy="150" r="16" opacity="0.14"/><circle cx="142" cy="136.1" r="16" opacity="0.14"/><circle cx="158" cy="136.1" r="16" opacity="0.14"/><circle cx="150" cy="150" r="16" opacity="0.14"/><circle cx="150" cy="150" r="38" opacity="0.1"/><circle cx="48" cy="245" r="55" opacity="0.1"/><circle cx="48" cy="245" r="80" opacity="0.07"/><circle cx="252" cy="50" r="40" opacity="0.09"/></g></svg>');
+  --pattern-light: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><g fill="none" stroke="%23AEC6EF" stroke-width="1"><circle cx="166" cy="150" r="16" opacity="0.35"/><circle cx="158" cy="163.9" r="16" opacity="0.35"/><circle cx="142" cy="163.9" r="16" opacity="0.35"/><circle cx="134" cy="150" r="16" opacity="0.35"/><circle cx="142" cy="136.1" r="16" opacity="0.35"/><circle cx="158" cy="136.1" r="16" opacity="0.35"/><circle cx="150" cy="150" r="16" opacity="0.35"/><circle cx="150" cy="150" r="38" opacity="0.28"/><circle cx="48" cy="245" r="55" opacity="0.3"/><circle cx="252" cy="50" r="40" opacity="0.27"/></g></svg>');
 }
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{
   margin:0;font-family:var(--sans);color:var(--char);line-height:1.6;
   background-color:var(--white);
-  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520"><g fill="none" stroke="%231F3864" stroke-width="1"><circle cx="80" cy="80" r="55" opacity="0.05"/><circle cx="80" cy="80" r="86" opacity="0.035"/><circle cx="440" cy="170" r="62" opacity="0.045"/><circle cx="250" cy="430" r="72" opacity="0.04"/><circle cx="250" cy="430" r="100" opacity="0.025"/></g></svg>');
+  background-image:var(--pattern-light);
   background-repeat:repeat;
-  background-size:520px 520px;
+  background-size:300px 300px;
 }
 img,svg{max-width:100%;}
 a{color:inherit;}
 .container{max-width:1080px;margin:0 auto;padding:0 28px;}
 
 /* Nav */
-.site-nav{position:sticky;top:0;z-index:50;background:var(--navy-dark);color:var(--white);}
+.site-nav{
+  position:sticky;top:0;z-index:50;color:var(--white);
+  background-color:var(--navy-dark);
+  background-image:var(--pattern-dark);
+  background-repeat:repeat;
+  background-size:300px 300px;
+}
 .site-nav .container{display:flex;align-items:center;justify-content:space-between;height:66px;}
 .brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-weight:700;font-size:1.05rem;letter-spacing:.02em;color:var(--white);text-decoration:none;}
 .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--gold);display:inline-block;}
@@ -31,9 +40,9 @@ a{color:inherit;}
 .hero{
   color:var(--white);padding:88px 0 76px;
   background-color:var(--navy-dark);
-  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520"><g fill="none" stroke="%23C9A227" stroke-width="1"><circle cx="90" cy="90" r="60" opacity="0.12"/><circle cx="90" cy="90" r="95" opacity="0.07"/><circle cx="440" cy="190" r="70" opacity="0.09"/><circle cx="270" cy="440" r="80" opacity="0.07"/></g></svg>'), linear-gradient(180deg,var(--navy-dark) 0%, var(--navy) 100%);
+  background-image:var(--pattern-dark), linear-gradient(180deg,var(--navy-dark) 0%, var(--navy) 100%);
   background-repeat:repeat, no-repeat;
-  background-size:520px 520px, 100% 100%;
+  background-size:300px 300px, 100% 100%;
 }
 .kicker{text-transform:uppercase;letter-spacing:.14em;font-size:.78rem;font-weight:700;color:var(--gold);margin:0 0 14px;}
 .hero h1{font-family:var(--serif);font-size:3.1rem;line-height:1.08;margin:0 0 18px;}
@@ -51,9 +60,9 @@ a{color:inherit;}
 section{padding:72px 0;}
 section.alt{
   background-color:var(--grey);
-  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520"><g fill="none" stroke="%231F3864" stroke-width="1"><circle cx="80" cy="80" r="55" opacity="0.045"/><circle cx="440" cy="170" r="62" opacity="0.04"/><circle cx="250" cy="430" r="72" opacity="0.035"/></g></svg>');
+  background-image:var(--pattern-light);
   background-repeat:repeat;
-  background-size:520px 520px;
+  background-size:300px 300px;
 }
 h2.section-title{font-family:var(--serif);font-size:2.1rem;margin:0 0 10px;color:var(--navy);}
 p.section-lead{color:var(--muted);max-width:720px;font-size:1.05rem;margin:0 0 40px;}
@@ -84,9 +93,9 @@ p.section-lead{color:var(--muted);max-width:720px;font-size:1.05rem;margin:0 0 4
 .module-header{
   color:var(--white);padding:56px 0 44px;
   background-color:var(--navy-dark);
-  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520"><g fill="none" stroke="%23C9A227" stroke-width="1"><circle cx="90" cy="90" r="60" opacity="0.1"/><circle cx="440" cy="190" r="70" opacity="0.08"/></g></svg>');
+  background-image:var(--pattern-dark);
   background-repeat:repeat;
-  background-size:520px 520px;
+  background-size:300px 300px;
 }
 .module-header .kicker{margin-bottom:10px;}
 .module-header h1{font-family:var(--serif);font-size:2.4rem;margin:0 0 10px;}
